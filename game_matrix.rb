@@ -37,33 +37,33 @@ module FiftinPuzzle
 
     def find_cheapest( states )
       min_cheapest = states.min_by{|e| e.coast}
-
+      # return min_cheapest
       cheapest_list = states.find_all{|e| e.coast==min_cheapest.coast} 
+      return cheapest_list.last
+      # # p ["deb", cheapest_list.count, states.count]
+      # # gets
+      # if cheapest_list.count == 1
+      #   @open_list << min_cheapest
+      #   return min_cheapest 
+      # end
 
-      # p ["deb", cheapest_list.count, states.count]
-      # gets
-      if cheapest_list.count == 1
-        @open_list << min_cheapest
-        return min_cheapest 
-      end
+      # mins = [].to_set
+      # cheapest_list.each do |node|
+      #   # p ["deb", node.matrix]
+      #   # gets
+      #   @closed_list << node
+      #   neighbors = node.neighbors(@open_list, @closed_list)
+      #   @open_list += neighbors
+      #   @open_list.delete( node )
+      #   min_val = neighbors.min_by{|e| e.coast}
+      #   mins += neighbors.find_all{ |e| e.coast==min_val.coast }
+      # end
 
-      mins = [].to_set
-      cheapest_list.each do |node|
-        # p ["deb", node.matrix]
-        # gets
-        @closed_list << node
-        neighbors = node.neighbors(@open_list, @closed_list)
-        @open_list += neighbors
-        @open_list.delete( node )
-        min_val = neighbors.min_by{|e| e.coast}
-        mins += neighbors.find_all{ |e| e.coast==min_val.coast }
-      end
-
-      if mins.count == 1
-        return mins.first
-      else
-        find_cheapest(mins)
-      end
+      # if mins.count == 1
+      #   return mins.first
+      # else
+      #   find_cheapest(mins)
+      # end
     end   
 
 
@@ -73,18 +73,17 @@ module FiftinPuzzle
       @open_list = [@matrix].to_set
       while !@open_list.empty?
         p @matrix.matrix
-        # puts @open_list.count
 
         return true if @matrix.solved?
-        @open_list.delete(@matrix)         
         @closed_list << @matrix.matrix_hash    
+        @open_list.delete(@matrix)                
         states = @matrix.neighbors(@open_list, @closed_list)   
-        if !states.empty?
+        if !states.empty? 
           @open_list += states
           @matrix = find_cheapest(states)                
           # @open_list += states     
         else
-          # @matrix = @open_list.min_by{|e| e.coast}
+          @matrix = @open_list.min_by{|e| e.coast}
         end
       end
       return false
@@ -148,6 +147,11 @@ module FiftinPuzzle
     end
 
 
+    def parent=(val)
+      @parent = val
+    end
+
+
     def coast
       @coast
     end
@@ -193,7 +197,7 @@ module FiftinPuzzle
     def calculate_coast
       g = get_g      
       h = get_h
-      p ["coast", g, h]
+      # p ["coast", g, h]
       @coast = g + h
     end
 
@@ -207,16 +211,21 @@ module FiftinPuzzle
     end
 
 
-    def moved_matrix( i, j, new_i, new_j, open_list )
+    def moved_matrix( i, j, new_i, new_j, open_list, closed_list )
       return nil if !index_exist?( new_i, new_j )      
 
       swapped_matrix = swap( i, j, new_i, new_j )    
       swapped_matrix = GameMatrix.new( swapped_matrix, self )            
+      return nil if closed_list.include?( swapped_matrix )
       swapped_matrix.calculate_coast    
+
 
       open_list_matrix = open_list.find{ |e| e == swapped_matrix }      
       if open_list_matrix && open_list_matrix.coast < swapped_matrix.coast
         return open_list_matrix
+      elsif open_list_matrix
+        open_list_matrix.parent = self
+        return open_list_matrix        
       else
         return swapped_matrix
       end
@@ -225,16 +234,16 @@ module FiftinPuzzle
     
     def neighbors( open_list, closed_list )
       i,j = free_cell      
-      up = moved_matrix(i, j, i-1, j, open_list)
-      down = moved_matrix(i, j, i+1, j, open_list)
-      left = moved_matrix(i, j, i, j-1, open_list)
-      right = moved_matrix(i, j, i, j+1, open_list)
+      up = moved_matrix(i, j, i-1, j, open_list, closed_list)
+      down = moved_matrix(i, j, i+1, j, open_list, closed_list)
+      left = moved_matrix(i, j, i, j-1, open_list, closed_list)
+      right = moved_matrix(i, j, i, j+1, open_list, closed_list)
 
-      moved = []
-      moved << up if !up.nil? && !closed_list.include?( up.matrix_hash )
-      moved << down if !down.nil? && !closed_list.include?( down.matrix_hash )
-      moved << left if !left.nil? && !closed_list.include?( left.matrix_hash )
-      moved << right if !right.nil? && !closed_list.include?( right.matrix_hash )
+      moved = [].to_set
+      moved << up if !up.nil? 
+      moved << down if !down.nil? 
+      moved << left if !left.nil? 
+      moved << right if !right.nil? 
 
       return moved
     end
