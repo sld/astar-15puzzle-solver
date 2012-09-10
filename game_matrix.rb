@@ -1,6 +1,6 @@
 #coding: utf-8
 require 'matrix'
-
+require 'set'
 
 class Matrix
   def []=(i, j, x)
@@ -18,68 +18,79 @@ module FiftinPuzzle
     end
 
 
-    def first_step      
-      @closed_list = [@matrix.matrix_hash]      
-      @open_list = @matrix.next_states           
-      @matrix = find_cheapest( @open_list )
-      @open_list.delete(@matrix)
+    def go_around_cheapest cheapest_list, rec_list=[]
+      cheapest_list.each do |cheapest|
+        @closed_list << cheapest.matrix_hash
+        states = cheapest.neighbors(@open_list, @closed_list)
+        most_cheapest = find_cheapest( states )
+        rec_list << most_cheapest
+      end
+      min_cheapest = rec_list.min_by{|e| e.coast}
+      cheapest_list = rec_list.find_all{|e| e==min_cheapest}     
+      if cheapest_list.count > 1
+        cheapest = go_around_cheapest cheapest_list
+      else
+        return cheapest_list.first
+      end
     end
 
 
     def find_cheapest( states )
-      cheapest = states.min_by{|e| e.coast}
-      
+      min_cheapest = states.min_by{|e| e.coast}
 
-      p "Cant find SOLVE" if cheapest.nil?
-      # print_debug
-      return cheapest
+      cheapest_list = states.find_all{|e| e.coast==min_cheapest.coast} 
+
+      # p ["deb", cheapest_list.count, states.count]
+      # gets
+      if cheapest_list.count == 1
+        @open_list << min_cheapest
+        return min_cheapest 
+      end
+
+      mins = [].to_set
+      cheapest_list.each do |node|
+        # p ["deb", node.matrix]
+        # gets
+        @closed_list << node
+        neighbors = node.neighbors(@open_list, @closed_list)
+        @open_list += neighbors
+        @open_list.delete( node )
+        min_val = neighbors.min_by{|e| e.coast}
+        mins += neighbors.find_all{ |e| e.coast==min_val.coast }
+      end
+
+      if mins.count == 1
+        return mins.first
+      else
+        find_cheapest(mins)
+      end
     end   
 
 
-    def next_steps                
-      @closed_list << @matrix.matrix_hash      
-      next_states = @matrix.next_states(@open_list, @closed_list)
-      # if next_states.empty?        
-      #   @matrix = @matrix.parent        
-      #   next_states = @matrix.next_states(@open_list, @closed_list)
-      # end      
-      @open_list += next_states
-      @matrix = find_cheapest(next_states)
-      @open_list.delete(@matrix)
-
-    end
-
 
     def run
-      # @closed_list = []
-      # @open_list = [@matrix]
-      # while !@open_list.empty?
-      #   states = @matrix.next_states(@open_list, @closed_list)
-      #   @closed_list << @matrix.matrix_hash
-      #   @open_list.delete(@matrix)
-      #   @matrix = find_cheapest(states)
-      #   @open_list += states
-
-
-
-
-      return @matrix if @matrix.solved?
-      first_step
-      return @matrix if @matrix.solved?      
-      while !@matrix.solved?
-        p [@open_list.count, @closed_list.count]        
-        next_steps
+      @closed_list = [].to_set
+      @open_list = [@matrix].to_set
+      while !@open_list.empty?
         p @matrix.matrix
-      end      
-      return @matrix
+        # puts @open_list.count
+
+        return true if @matrix.solved?
+        @open_list.delete(@matrix)         
+        @closed_list << @matrix.matrix_hash    
+        states = @matrix.neighbors(@open_list, @closed_list)   
+        if !states.empty?
+          @open_list += states
+          @matrix = find_cheapest(states)                
+          # @open_list += states     
+        else
+          # @matrix = @open_list.min_by{|e| e.coast}
+        end
+      end
+      return false
     end
 
 
-    def print_debug
-      mapped_open = @open_list.map{|e| e.matrix}
-      mapped_close = @closed_list.map{ |e| e.matrix }
-      # p [{ :matrix => @matrix.matrix, :open_list => mapped_open, :closed_list => mapped_close } ]
-    end
   end
 
 
@@ -87,7 +98,8 @@ module FiftinPuzzle
   class GameMatrix  
     FREE_CELL = 0
     CORRECT_ANSWER = Matrix[[1,2,3,4], [5,6,7,8], [9,10,11,12], [13,14,15,0]]
-
+    
+    # CORRECT_ANSWER = Matrix[[1,2,3], [4,5,6], [7,8,9], [10,11,0]]
 
     def initialize( matrix, parent = nil )
       raise ArgumentError if matrix.row_size != 4 ||  matrix.column_size != 4
@@ -181,6 +193,7 @@ module FiftinPuzzle
     def calculate_coast
       g = get_g      
       h = get_h
+      p ["coast", g, h]
       @coast = g + h
     end
 
@@ -210,7 +223,8 @@ module FiftinPuzzle
     end
 
     
-    def moved_matrixes( i, j, open_list, closed_list )
+    def neighbors( open_list, closed_list )
+      i,j = free_cell      
       up = moved_matrix(i, j, i-1, j, open_list)
       down = moved_matrix(i, j, i+1, j, open_list)
       left = moved_matrix(i, j, i, j-1, open_list)
@@ -224,14 +238,6 @@ module FiftinPuzzle
 
       return moved
     end
-
-
-    # Возвращает состояния, возникающие при перемещении цифр на своболную ячейку
-    def next_states( open_list = [], closed_list = [])
-      i,j = free_cell            
-      return moved_matrixes(i, j, open_list, closed_list)      
-    end
-
   end
 
 
@@ -253,11 +259,16 @@ def test
   matrix3 = Matrix[[1, 2, 3, 4], [11, 6, 0, 14], [15, 7, 9, 10], [5, 8, 12, 13]]
 
   matrix4 = Matrix[[2, 0, 3, 4], [7, 10, 9, 8], [1, 14, 6, 11], [5, 13, 15, 12]]
-  
-  game_matrix = GameMatrix.new( matrix4 )
+
+  matrix5 = Matrix[[ 1, 2, 3, 4],
+                  [ 5, 6, 7, 8],
+                  [ 9, 10, 0, 12],
+                  [ 13, 14, 11, 15]]
+
+  game_matrix = GameMatrix.new( matrix5 )
   algorithm = AStarAlgorithm.new( game_matrix )
   algorithm.run
 end
 
-test
+# test
 
