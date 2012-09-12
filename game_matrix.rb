@@ -2,6 +2,7 @@
 require 'matrix'
 require 'set'
 
+
 class Matrix
   def []=(i, j, x)
     @rows[i][j] = x
@@ -18,31 +19,33 @@ module FiftinPuzzle
       @nodes_count = 0
     end
 
-    def run
-      @matrix.calculate_cost
-      @cost_limit = @matrix.cost
-      
-      nodes_to_visit = [@matrix]
 
-      while !nodes_to_visit.empty?
-        current_node = nodes_to_visit.shift
-        if current_node.solved?
-          print "SOLVED"
-          return true
-        end               
-        neighbors = current_node.neighbors         
-        neighbors.each do |n|
-          if n.solved?
-            print "SOLVED"
-            return true
-          end  
-          if n.cost <= @cost_limit
-            nodes_to_visit.unshift(n)
-          end
+    def find_cheapest( states )
+      min_cheapest = states.min_by{|e| e.cost}  
+      cheapest_list = states.find_all{|e| e.cost==min_cheapest.cost} 
+      return cheapest_list.last
+    end
+
+
+    def run
+      @closed_list = [].to_set
+      @open_list = [@matrix].to_set
+      while !@open_list.empty?
+        # puts @matrix.matrix
+
+        return true if @matrix.solved?
+        @closed_list << @matrix.matrix_hash    
+        @open_list.delete(@matrix)                
+        states = @matrix.neighbors(@open_list, @closed_list)   
+        if !states.empty? 
+          @open_list += states
+          @matrix = find_cheapest(states)                    
+        else
+          @matrix = @open_list.min_by{|e| e.cost}
         end
-        if nodes_to_visit.empty?
-           @cost_limit += 1 #neighbors.min_by{|e| e.cost}.cost
-           nodes_to_visit = [@matrix]
+
+        if @open_list.count > 1000        
+          @open_list = @open_list.sort_by{|e| e.cost}[0..500].to_set
         end
       end
 
@@ -52,25 +55,25 @@ module FiftinPuzzle
 
 
 
-
-
   # Класс игровой матрицы для пятнашек
   class GameMatrix  
     FREE_CELL = 0
+    ROW_SIZE = 4
+    COLUMN_SIZE = 4 
     CORRECT_ANSWER = Matrix[[1,2,3,4], [5,6,7,8], [9,10,11,12], [13,14,15,0]]
     
-    # CORRECT_ANSWER = Matrix[[1,2,3], [4,5,6], [7,8,9], [10,11,0]]
 
-    def initialize( matrix, depth = 0 )
-      raise ArgumentError if matrix.row_size != 4 ||  matrix.column_size != 4
+    def initialize( matrix, parent=nil, depth_val=0 )
+      raise ArgumentError if matrix.row_size != ROW_SIZE ||  matrix.column_size != COLUMN_SIZE
+
       @matrix = matrix
-      @depth = depth  
+      @parent = parent  
       @cost = 0   
+      @depth = depth_val
     end
 
 
     def ==(other)            
-      # return false if other.nil?
       @matrix == other.matrix
     end
 
@@ -85,10 +88,10 @@ module FiftinPuzzle
       @matrix
     end
 
+    # Вместо всей матрицы используется её хэш для хранения в closed_list 
     def matrix_hash
       @matrix.hash
     end
-
 
 
     # Возвращает текущую позицию свободной ячейки в матрице
@@ -113,21 +116,6 @@ module FiftinPuzzle
     end
 
 
-    def cost
-      @cost
-    end
-
-
-    def top_parent
-      par = parent
-      while !par.nil?  
-        return par if par.parent.nil?
-        par = par.parent
-      end
-      return par 
-    end
-
-
     def parents_count
       count = 0
     
@@ -140,9 +128,22 @@ module FiftinPuzzle
     end
 
 
-    def get_uncorrect_positions_count
-      # (@matrix - CORRECT_ANSWER).find_all{ |e| e != 0 }.count 
+    def depth 
+      @depth
+    end
 
+
+    def depth=(val)
+      @depth = val
+    end
+
+
+    def cost
+      @cost
+    end
+
+
+    def manhattan_distance
       matrix_hash = {}
       @matrix.each_with_index do |e, i, j|
         matrix_hash[e] = Vector[i, j]
@@ -154,10 +155,10 @@ module FiftinPuzzle
       end
 
       sum = 0
-
       etalon_hash.keys.each do |e|
-        sum += (matrix_hash[e] - etalon_hash[e]).collect{|e| e.abs}.inject{|sum,x| sum + x }
+        sum += (matrix_hash[e] - etalon_hash[e]).collect{|e| e.abs}.inject{|ind_sum,x| ind_sum + x }
       end
+
       return sum
     end
 
@@ -168,14 +169,13 @@ module FiftinPuzzle
 
 
     def get_h
-      get_uncorrect_positions_count
+      manhattan_distance 
     end
 
 
     def calculate_cost
       g = get_g      
       h = get_h
-      p ["deb", g, h]
       @cost = g + h
     end
 
@@ -189,15 +189,27 @@ module FiftinPuzzle
     end
 
 
+    # Меняем местами позиции и проверяем нахождение в open и closed list
     def moved_matrix( i, j, new_i, new_j, open_list, closed_list )
       return nil if !index_exist?( new_i, new_j )      
 
       swapped_matrix = swap( i, j, new_i, new_j )    
-      swapped_matrix = GameMatrix.new( swapped_matrix, @depth+1 )            
+
+      new_depth = @depth + 1
+      swapped_matrix = GameMatrix.new( swapped_matrix, self, new_depth )            
+      return nil if closed_list.include?( swapped_matrix )
       swapped_matrix.calculate_cost    
 
-      return swapped_matrix
-
+      open_list_matrix = open_list.find{ |e| e == swapped_matrix }      
+      if open_list_matrix && open_list_matrix.cost < swapped_matrix.cost
+        return open_list_matrix
+      elsif open_list_matrix
+        open_list_matrix.parent = self
+        open_list_matrix.depth = new_depth
+        return open_list_matrix        
+      else
+        return swapped_matrix
+      end
     end
 
     
@@ -221,32 +233,4 @@ module FiftinPuzzle
 
 end
 
-
-include FiftinPuzzle
-def test
-  matrix = Matrix[[ 15, 11, 4, 8],
-                  [ 5, 12, 3, 7],
-                  [ 9, 1, 10, 2],
-                  [ GameMatrix::FREE_CELL, 6, 14, 13]]
-
-  matrix2 = Matrix[[ 1, 2, 3, 4],
-                  [ 5, 6, 7, 8],
-                  [ 9, 10, 11, 12],
-                  [ GameMatrix::FREE_CELL, 13, 14, 15]]
-
-  matrix3 = Matrix[[1, 2, 3, 4], [11, 6, 0, 14], [15, 7, 9, 10], [5, 8, 12, 13]]
-
-  matrix4 = Matrix[[2, 0, 3, 4], [7, 10, 9, 8], [1, 14, 6, 11], [5, 13, 15, 12]]
-
-  matrix5 = Matrix[[ 1, 2, 3, 4],
-                  [ 5, 6, 7, 8],
-                  [ 9, 10, 0, 12],
-                  [ 13, 14, 11, 15]]
-
-  game_matrix = GameMatrix.new( matrix5 )
-  algorithm = AStarAlgorithm.new( game_matrix )
-  algorithm.run
-end
-
-# test
 
