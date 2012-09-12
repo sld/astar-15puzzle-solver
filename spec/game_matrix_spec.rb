@@ -43,10 +43,10 @@ describe GameMatrix do
     matrix.parents_count.should == 0
     matrix_up.parents_count.should == 1
 
-    matrix_up.calculate_coast
-    matrix_down.calculate_coast
-    matrix_left.calculate_coast
-    matrix_right.calculate_coast
+    matrix_up.calculate_cost
+    matrix_down.calculate_cost
+    matrix_left.calculate_cost
+    matrix_right.calculate_cost
 
     matrix.get_h.should == 15
     matrix.neighbors([],[]).collect{|e| e.matrix}.should == [matrix_up, matrix_down, matrix_left, matrix_right].collect{|e| e.matrix}
@@ -111,7 +111,8 @@ describe GameMatrix do
                         [9, 10,  11,  8],
                         [13,  14,  15,  12]
                         ]
-      game_matrix = GameMatrix.new( matrix3 )
+      matrix4= Matrix[[2,6,0,8],[1,9,7,4],[5,10,15,3],[13,12,14,11]]
+      game_matrix = GameMatrix.new( matrix4 )
       algorithm = AStarAlgorithm.new( game_matrix )
       algorithm.run.should == true
   end
