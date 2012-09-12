@@ -25,7 +25,7 @@ module FiftinPuzzle
         most_cheapest = find_cheapest( states )
         rec_list << most_cheapest
       end
-      min_cheapest = rec_list.min_by{|e| e.coast}
+      min_cheapest = rec_list.min_by{|e| e.cost}
       cheapest_list = rec_list.find_all{|e| e==min_cheapest}     
       if cheapest_list.count > 1
         cheapest = go_around_cheapest cheapest_list
@@ -36,9 +36,9 @@ module FiftinPuzzle
 
 
     def find_cheapest( states )
-      min_cheapest = states.min_by{|e| e.coast}
+      min_cheapest = states.min_by{|e| e.cost}
       # return min_cheapest
-      cheapest_list = states.find_all{|e| e.coast==min_cheapest.coast} 
+      cheapest_list = states.find_all{|e| e.cost==min_cheapest.cost} 
       return cheapest_list.last
       # # p ["deb", cheapest_list.count, states.count]
       # # gets
@@ -55,8 +55,8 @@ module FiftinPuzzle
       #   neighbors = node.neighbors(@open_list, @closed_list)
       #   @open_list += neighbors
       #   @open_list.delete( node )
-      #   min_val = neighbors.min_by{|e| e.coast}
-      #   mins += neighbors.find_all{ |e| e.coast==min_val.coast }
+      #   min_val = neighbors.min_by{|e| e.cost}
+      #   mins += neighbors.find_all{ |e| e.cost==min_val.cost }
       # end
 
       # if mins.count == 1
@@ -83,7 +83,14 @@ module FiftinPuzzle
           @matrix = find_cheapest(states)                
           # @open_list += states     
         else
-          @matrix = @open_list.min_by{|e| e.coast}
+          @matrix = @open_list.min_by{|e| e.cost}
+        end
+
+        if @open_list.count > 1000        
+          @open_list = @open_list.sort_by{|e| e.cost}
+          p @open_list.collect{|e| e.cost}  
+          @open_list = @open_list[0..500].to_set
+
         end
       end
       return false
@@ -104,7 +111,7 @@ module FiftinPuzzle
       raise ArgumentError if matrix.row_size != 4 ||  matrix.column_size != 4
       @matrix = matrix
       @parent = parent  
-      @coast = 0   
+      @cost = 0   
     end
 
 
@@ -152,8 +159,8 @@ module FiftinPuzzle
     end
 
 
-    def coast
-      @coast
+    def cost
+      @cost
     end
 
 
@@ -180,7 +187,23 @@ module FiftinPuzzle
 
 
     def get_uncorrect_positions_count
-      (@matrix - CORRECT_ANSWER).find_all{ |e| e != 0 }.count 
+      # (@matrix - CORRECT_ANSWER).find_all{ |e| e != 0 }.count 
+      matrix_hash = {}
+      @matrix.each_with_index do |e, i, j|
+        matrix_hash[e] = Vector[i, j]
+      end
+
+      etalon_hash = {}
+      CORRECT_ANSWER.each_with_index do |e, i, j|
+        etalon_hash[e] = Vector[i, j]
+      end
+
+      summ = 0
+
+      etalon_hash.keys.each do |e|
+        summ += (matrix_hash[e] - etalon_hash[e]).collect{|e| e.abs}.inject{|sum,x| sum + x }
+      end
+      return summ
     end
 
 
@@ -194,11 +217,11 @@ module FiftinPuzzle
     end
 
 
-    def calculate_coast
+    def calculate_cost
       g = get_g      
       h = get_h
-      # p ["coast", g, h]
-      @coast = g + h
+      # p ["cost", g, h]
+      @cost = g + h
     end
 
 
@@ -217,11 +240,11 @@ module FiftinPuzzle
       swapped_matrix = swap( i, j, new_i, new_j )    
       swapped_matrix = GameMatrix.new( swapped_matrix, self )            
       return nil if closed_list.include?( swapped_matrix )
-      swapped_matrix.calculate_coast    
+      swapped_matrix.calculate_cost    
 
 
       open_list_matrix = open_list.find{ |e| e == swapped_matrix }      
-      if open_list_matrix && open_list_matrix.coast < swapped_matrix.coast
+      if open_list_matrix && open_list_matrix.cost < swapped_matrix.cost
         return open_list_matrix
       elsif open_list_matrix
         open_list_matrix.parent = self
