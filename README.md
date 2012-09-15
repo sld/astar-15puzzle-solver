@@ -35,23 +35,23 @@ Or install it yourself as:
     
 3. Run AStar:
 
-	@algorithm.run
-	#NOTE: In puzzle with more than 20 turns to solve program may work > 1 min.
+    @algorithm.run
+    #NOTE: In puzzle with more than 20 turns to solve program may work > 1 min.
 	
 4. To access the solution:
 
-	@solution = algorithm.solution
+    @solution = algorithm.solution
 	
 It returns the goal state of game matrix
 To Get previous states enter:
 
-	par1 = @solution.parent
-	next_parent = par1.parent
+    par1 = @solution.parent
+    next_parent = par1.parent
 	
 5. To get the Matrix of board:
 
-	@solution.matrix
-	@solution.parent.matrix
+    @solution.matrix
+    @solution.parent.matrix
 
 ## Testing
 RSpec needs for testing.
@@ -60,7 +60,7 @@ There are several example of matrixes.
 You can change the run matrixes in spec/game_matrix_spec.rb
 To run tests enter in command line:
 
-	rspec
+    rspec
 
 
 ## Contributing
