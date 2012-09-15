@@ -116,7 +116,7 @@ describe GameMatrix do
                         [13,  14,  15,  12]
                         ]
       matrix4= Matrix[[2,6,0,8],[1,9,7,4],[5,10,15,3],[13,12,14,11]]
-      game_matrix = GameMatrix.new( matrix2 )
+      game_matrix = GameMatrix.new( matrix3 )
       algorithm = AStarAlgorithm.new( game_matrix )
       algorithm.run.should == true
   end
