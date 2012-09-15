@@ -1,7 +1,7 @@
 require 'rspec'
 require_relative '../game_matrix'
 
-include FiftinPuzzle
+include FifteenPuzzle
 
 describe GameMatrix do
 
@@ -88,12 +88,10 @@ describe GameMatrix do
     game_matrix = GameMatrix.new( matrix5 )
     algorithm = AStarAlgorithm.new( game_matrix )
     algorithm.run.should == true
-    p "END"
     
     game_matrix = GameMatrix.new( matrix2 )
     algorithm = AStarAlgorithm.new( game_matrix )
     algorithm.run.should == true
-    p "END"
 
     game_matrix = GameMatrix.new( matrix1 )
     algorithm = AStarAlgorithm.new( game_matrix )
@@ -105,7 +103,7 @@ describe GameMatrix do
 
   end
 
-  it "should calc cost" do
+  it "should calc manhattan distance" do
     h_matrix = GameMatrix.new Matrix[[15,1,2,3],[4,5,6,7],[8,9,10,11],[0,13,14,12]]
     h_matrix.get_h.should == 28
   end

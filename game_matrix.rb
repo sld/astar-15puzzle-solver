@@ -2,6 +2,18 @@
 require 'matrix'
 require 'set'
 
+class Array
+  def uniq_by(&blk)
+    transforms = {}
+    select do |el|
+      t = blk[el]
+      should_keep = !transforms[t]
+      transforms[t] = true
+      should_keep
+    end
+  end
+end
+
 
 class Matrix
   def []=(i, j, x)
@@ -10,10 +22,15 @@ class Matrix
 end
 
 
-module FiftinPuzzle
+module FifteenPuzzle
 
 
   class AStarAlgorithm
+    attr_reader :solution
+    # For Beam search
+    MAX_OPEN_LIST = 1000
+
+
     def initialize( game_matrix )
       @matrix = game_matrix
       @nodes_count = 0
@@ -30,10 +47,13 @@ module FiftinPuzzle
     def run
       @closed_list = [].to_set
       @open_list = [@matrix].to_set
-      while !@open_list.empty?
-        # puts @matrix.matrix
+      while !@open_list.empty?        
 
-        return true if @matrix.solved?
+        if @matrix.solved?
+          @solution = @matrix
+          return true 
+        end
+
         @closed_list << @matrix.matrix_hash    
         @open_list.delete(@matrix)                
         states = @matrix.neighbors(@open_list, @closed_list)   
@@ -44,8 +64,9 @@ module FiftinPuzzle
           @matrix = @open_list.min_by{|e| e.cost}
         end
 
-        if @open_list.count > 1000        
-          @open_list = @open_list.sort_by{|e| e.cost}[0..500].to_set
+        # Beam search euristic
+        if @open_list.count > MAX_OPEN_LIST        
+          @open_list = @open_list.sort_by{|e| e.cost}[0..MAX_OPEN_LIST/2].to_set
         end
       end
 
@@ -54,8 +75,6 @@ module FiftinPuzzle
   end
 
 
-
-  # Класс игровой матрицы для пятнашек
   class GameMatrix  
     FREE_CELL = 0
     ROW_SIZE = 4
@@ -83,18 +102,17 @@ module FiftinPuzzle
     end
 
 
-    # Возвращает текущую матрицу 
     def matrix
       @matrix
     end
 
-    # Вместо всей матрицы используется её хэш для хранения в closed_list 
+    # Get matrix_hash to save it on closed list
     def matrix_hash
       @matrix.hash
     end
 
 
-    # Возвращает текущую позицию свободной ячейки в матрице
+    # Get current position of free cell
     def free_cell
       @matrix.find_index{ |elem| elem == FREE_CELL}
     end
@@ -189,7 +207,7 @@ module FiftinPuzzle
     end
 
 
-    # Меняем местами позиции и проверяем нахождение в open и closed list
+    # Get swapped matrix, check him in closed and open list
     def moved_matrix( i, j, new_i, new_j, open_list, closed_list )
       return nil if !index_exist?( new_i, new_j )      
 
@@ -213,6 +231,7 @@ module FiftinPuzzle
     end
 
     
+    # Get all possible movement matrixes
     def neighbors( open_list=[], closed_list=[] )
       i,j = free_cell      
       up = moved_matrix(i, j, i-1, j, open_list, closed_list)
