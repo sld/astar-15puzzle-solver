@@ -1,6 +1,7 @@
 #coding: utf-8
 require 'matrix'
 require 'set'
+require "fifteen_puzzle/version"
 
 
 class Matrix
