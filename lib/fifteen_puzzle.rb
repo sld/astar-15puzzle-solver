@@ -70,7 +70,6 @@ module FifteenPuzzle
     FREE_CELL = 0
     ROW_SIZE = 4
     COLUMN_SIZE = 4 
-    SHUFFLE_COUNT = 4 
     CORRECT_ANSWER = Matrix[[1,2,3,4], [5,6,7,8], [9,10,11,12], [13,14,15,0]]
     
 
@@ -252,9 +251,9 @@ module FifteenPuzzle
     end
 
 
-    def shuffle
+    def shuffle( count = 6 )
       shuffled_matrix = nil      
-      SHUFFLE_COUNT.times do 
+      count.times do 
         i,j = free_cell
         rand_num = rand(12)
         case rand_num
