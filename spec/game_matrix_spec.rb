@@ -58,7 +58,7 @@ describe GameMatrix do
                 [ 11, 9, 8, 12],
                 [ 3, 6, 7, 0],
                 [15, 5, 2, 10]], matrix   
-    matrix.moved_matrix(2,3,3,3,[], []).should == GameMatrix.new(Matrix[[ 1, 4, 14, 13],
+    matrix.moved_matrix_with_parent(2,3,3,3,[], []).should == GameMatrix.new(Matrix[[ 1, 4, 14, 13],
                       [ 11, 9, 8, 12],
                       [ 3, 6, 7, 10],
                       [15, 5, 2, 0]], matrix    )         
@@ -116,16 +116,16 @@ describe GameMatrix do
                         [13,  14,  15,  12]
                         ]
       matrix4= Matrix[[2,6,0,8],[1,9,7,4],[5,10,15,3],[13,12,14,11]]
-      game_matrix = GameMatrix.new( matrix2 )
+      game_matrix = GameMatrix.new( matrix3 )
       algorithm = AStarAlgorithm.new( game_matrix )
       algorithm.run.should == true
   end
 
-  it "should solve Marina example" do
-    # matrix = Matrix[[1, 2, 3], [4, 8, 5], [7,6,0]]
-    # game_matrix = GameMatrix.new( matrix2 )
-    # algorithm = AStarAlgorithm.new( game_matrix )
-    # algorithm.run.should == true 
+  it "should shuffle game matrix" do
+    matrix = Matrix[[2,6,0,8],[1,9,7,4],[5,10,15,3],[13,12,14,11]]
+    game_matrix = GameMatrix.new( matrix )
+    p game_matrix.shuffle
+    game_matrix.shuffle.should_not == game_matrix
   end
 
 

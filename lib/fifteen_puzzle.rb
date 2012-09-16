@@ -70,6 +70,7 @@ module FifteenPuzzle
     FREE_CELL = 0
     ROW_SIZE = 4
     COLUMN_SIZE = 4 
+    SHUFFLE_COUNT = 4 
     CORRECT_ANSWER = Matrix[[1,2,3,4], [5,6,7,8], [9,10,11,12], [13,14,15,0]]
     
 
@@ -199,7 +200,7 @@ module FifteenPuzzle
 
 
     # Get swapped matrix, check him in closed and open list
-    def moved_matrix( i, j, new_i, new_j, open_list, closed_list )
+    def moved_matrix_with_parent( i, j, new_i, new_j, open_list, closed_list )
       return nil if !index_exist?( new_i, new_j )      
 
       swapped_matrix = swap( i, j, new_i, new_j )    
@@ -225,10 +226,10 @@ module FifteenPuzzle
     # Get all possible movement matrixes
     def neighbors( open_list=[], closed_list=[] )
       i,j = free_cell      
-      up = moved_matrix(i, j, i-1, j, open_list, closed_list)
-      down = moved_matrix(i, j, i+1, j, open_list, closed_list)
-      left = moved_matrix(i, j, i, j-1, open_list, closed_list)
-      right = moved_matrix(i, j, i, j+1, open_list, closed_list)
+      up = moved_matrix_with_parent(i, j, i-1, j, open_list, closed_list)
+      down = moved_matrix_with_parent(i, j, i+1, j, open_list, closed_list)
+      left = moved_matrix_with_parent(i, j, i, j-1, open_list, closed_list)
+      right = moved_matrix_with_parent(i, j, i, j+1, open_list, closed_list)
 
       moved = []
       moved << up if !up.nil? 
@@ -238,6 +239,56 @@ module FifteenPuzzle
 
       return moved
     end
+
+
+    def shuffle
+      shuffled_matrix = nil      
+      SHUFFLE_COUNT.times do 
+        i,j = free_cell
+        rand_num = rand(12)
+        case rand_num
+        when 0..2
+          shuffled_matrix = up_matrix(i, j) || shuffled_matrix
+        when 3..5
+          shuffled_matrix = down_matrix(i, j) || shuffled_matrix
+        when 6..8
+          shuffled_matrix = left_matrix(i, j) || shuffled_matrix
+        when 9..11
+          shuffled_matrix = right_matrix(i, j) || shuffled_matrix
+        end
+      end
+      return shuffled_matrix
+    end
+
+
+    def moved_matrix( i, j, new_i, new_j)
+      return nil if !index_exist?( new_i, new_j )      
+      swapped_matrix = swap( i, j, new_i, new_j )    
+      swapped_matrix = GameMatrix.new( swapped_matrix )
+      return swapped_matrix
+    end
+
+
+    def up_matrix(i, j)
+      return moved_matrix(i, j, i-1, j)
+    end
+
+
+    def down_matrix(i, j)
+      return moved_matrix(i, j, i+1, j)
+    end
+
+
+    def left_matrix(i, j)
+      return moved_matrix(i, j, i, j-1)
+    end
+
+
+    def right_matrix(i, j)
+      return moved_matrix(i, j, i, j+1)
+    end
+
+
   end
 
 
