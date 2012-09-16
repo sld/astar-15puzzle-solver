@@ -126,6 +126,18 @@ module FifteenPuzzle
     end
 
 
+    def self_and_parents
+      arr = [self] 
+      par = parent
+      arr << par
+      while !par.nil?      
+        par = par.parent
+        arr << par
+      end
+      return arr
+    end
+
+
     def parents_count
       count = 0
     

@@ -123,9 +123,19 @@ describe GameMatrix do
 
   it "should shuffle game matrix" do
     matrix = Matrix[[2,6,0,8],[1,9,7,4],[5,10,15,3],[13,12,14,11]]
-    game_matrix = GameMatrix.new( matrix )
-    p game_matrix.shuffle
+    game_matrix = GameMatrix.new( matrix )    
     game_matrix.shuffle.should_not == game_matrix
+  end
+
+  it "should return self and parents of solution" do
+    matrix3 = Matrix[[1, 0, 2, 3],[5, 6, 7, 4],
+                        [9, 10,  11,  8],
+                        [13,  14,  15,  12]
+                        ]
+    game_matrix = GameMatrix.new( matrix3 )
+    algorithm = AStarAlgorithm.new( game_matrix )
+    algorithm.run
+    solution_self_and_parents = algorithm.solution.self_and_parents    
   end
 
 
