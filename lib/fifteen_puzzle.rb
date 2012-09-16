@@ -129,10 +129,9 @@ module FifteenPuzzle
     def self_and_parents
       arr = [self] 
       par = parent
-      arr << par
-      while !par.nil?      
+      while !par.nil?   
+        arr << par   
         par = par.parent
-        arr << par
       end
       return arr
     end
